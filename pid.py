@@ -2,58 +2,58 @@ from dronekit import connect
 import time
 
 # 1. CONEXÃO VIA TELEMETRIA
-# No Windows, verifique no Gerenciador de Dispositivos qual é a porta COM do seu rádio.
-# Baudrate padrão de rádios de telemetria é 57600.
-print("Conectando ao veículo via telemetria...")
-vehicle = connect('COM5', baud=57600, wait_ready=True) #
+print("Conectando ao veículo via telemetria (57600 baud)...")
+veiculo = connect('COM5', baud=57600, wait_ready=True)
 
-def alterar_parametro_pid(eixo, tipo_ganho, valor):
-    """
-    eixo: 'RLL', 'PIT' ou 'YAW'
-    tipo_ganho: 'P', 'I' ou 'D'
-    valor: o número float que você deseja definir
-    """
-    # Constrói o nome exato do parâmetro do ArduPilot
-    nome_parametro = f"ATC_RAT_{eixo.upper()}_{tipo_ganho.upper()}"
-    
+def ajustar_parametro(nome_param, valor):
+    """Função auxiliar para escrita e confirmação via rádio"""
     try:
-        # Lê o valor atual antes da alteração
-        valor_antigo = vehicle.parameters[nome_parametro] #
-        print(f"Alterando {nome_parametro}: {valor_antigo} -> {valor}")
-        
-        # Envia o novo valor para a Pixhawk
-        vehicle.parameters[nome_parametro] = valor #
-        
-        # A telemetria precisa de um tempo para processar e confirmar
-        time.sleep(1.5) 
-        
-        # Verifica se o valor foi atualizado com sucesso
-        valor_confirmado = vehicle.parameters[nome_parametro] #
-        print(f"Confirmação de {nome_parametro}: {valor_confirmado}")
-        
-    except KeyError:
-        print(f"Erro: O parâmetro {nome_parametro} não foi encontrado no veículo.")
+        veiculo.parameters[nome_param] = valor
+        time.sleep(1.2) # Tempo para sincronia da telemetria
+        print(f"  [OK] {nome_param}: {veiculo.parameters[nome_param]}")
     except Exception as e:
-        print(f"Erro na conexão: {e}")
+        print(f"  [ERRO] Falha ao ajustar {nome_param}: {e}")
 
-# --- ESPAÇO PARA SEUS AJUSTES MANUAIS ---
+def atualizar_ganhos_drone(kp_rp, ki_rp, kd_rp, kp_yaw, ki_yaw, kd_yaw):
+    """
+    Atualiza Roll e Pitch com os mesmos valores, e Yaw separadamente.
+    """
+    print("\n--- INICIANDO ATUALIZAÇÃO DE GANHOS ---")
+    
+    # AJUSTE ROLL (RLL)
+    print("Ajustando ROLL...")
+    ajustar_parametro('ATC_RAT_RLL_P', kp_rp)
+    ajustar_parametro('ATC_RAT_RLL_I', ki_rp)
+    ajustar_parametro('ATC_RAT_RLL_D', kd_rp)
+    
+    # AJUSTE PITCH (PIT) - IGUAL AO ROLL
+    print("Ajustando PITCH (Simétrico ao Roll)...")
+    ajustar_parametro('ATC_RAT_PIT_P', kp_rp)
+    ajustar_parametro('ATC_RAT_PIT_I', ki_rp)
+    ajustar_parametro('ATC_RAT_PIT_D', kd_rp)
+    
+    # AJUSTE YAW (DIFERENTE)
+    print("Ajustando YAW...")
+    ajustar_parametro('ATC_RAT_YAW_P', kp_yaw)
+    ajustar_parametro('ATC_RAT_YAW_I', ki_yaw)
+    ajustar_parametro('ATC_RAT_YAW_D', kd_yaw)
+    
+    print("--- PROCESSO CONCLUÍDO ---\n")
 
-# Exemplos de uso (Basta descomentar e colocar o valor que você quer):
+# --- ÁREA DE CONFIGURAÇÃO DO USUÁRIO ---
 
-# ROLL
-# alterar_parametro_pid('RLL', 'P', 0.15)
-# alterar_parametro_pid('RLL', 'I', 0.01)
-# alterar_parametro_pid('RLL', 'D', 0.004)
+# Defina aqui os ganhos para ROLL e PITCH (Iguais)
+KP_ROLL_PITCH = 0.150
+KI_ROLL_PITCH = 0.010
+KD_ROLL_PITCH = 0.004
 
-# PITCH
-# alterar_parametro_pid('PIT', 'P', 0.15)
-# alterar_parametro_pid('PIT', 'I', 0.01)
-# alterar_parametro_pid('PIT', 'D', 0.004)
+# Defina aqui os ganhos para YAW (Diferente)
+KP_YAW = 0.200
+KI_YAW = 0.020
+KD_YAW = 0.000
 
-# YAW
-# alterar_parametro_pid('YAW', 'P', 0.20)
-# alterar_parametro_pid('YAW', 'I', 0.02)
-# alterar_parametro_pid('YAW', 'D', 0.00)
+# Executa a atualização
+atualizar_ganhos_drone(KP_ROLL_PITCH, KI_ROLL_PITCH, KD_ROLL_PITCH, 
+                       KP_YAW, KI_YAW, KD_YAW)
 
-print("Operação concluída.")
-vehicle.close() #
+veiculo.close()
