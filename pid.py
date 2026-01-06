@@ -56,4 +56,20 @@ KD_YAW = 0.000
 atualizar_ganhos_drone(KP_ROLL_PITCH, KI_ROLL_PITCH, KD_ROLL_PITCH, 
                        KP_YAW, KI_YAW, KD_YAW)
 
-veiculo.close()
+canal = veiculo.channels
+
+print(" Roll (Ch1): %s" % canal[1])
+print(" Pitch (Ch2): %s" % canal[2])
+print(" Throttle (Ch4): %s" % canal[3])
+print(" Yaw (Ch3): %s" % canal[4])
+
+try:
+    while True:
+        print("Ch1: %s, Ch2: %s, Ch3: %s, Ch4: %s" % (
+            canal[1], canal[2], canal[3], canal[4])
+            )
+        time.sleep(1)
+
+except KeyboardInterrupt:
+    print("Fim da conexão com o veículo.")
+    veiculo.close()
