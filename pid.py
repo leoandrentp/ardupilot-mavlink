@@ -11,6 +11,7 @@ def ajustar_parametro(nome_param, valor):
         veiculo.parameters[nome_param] = valor
         time.sleep(1.2) # Tempo para sincronia da telemetria
         print(f"  [OK] {nome_param}: {veiculo.parameters[nome_param]}")
+        return valor
     except Exception as e:
         print(f"  [ERRO] Falha ao ajustar {nome_param}: {e}")
 
