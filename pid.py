@@ -1,9 +1,10 @@
 from dronekit import connect
 import time
+import math
 
 # 1. CONEXÃO VIA TELEMETRIA
 print("Conectando ao veículo via telemetria (57600 baud)...")
-veiculo = connect('COM5', baud=57600, wait_ready=True)
+veiculo = connect('udp:127.0.0.1:14550', wait_ready=True)
 
 def ajustar_parametro(nome_param, valor):
     """Função auxiliar para escrita e confirmação via rádio"""
@@ -41,6 +42,20 @@ def atualizar_ganhos_drone(kp_rp, ki_rp, kd_rp, kp_yaw, ki_yaw, kd_yaw):
     
     print("--- PROCESSO CONCLUÍDO ---\n")
 
+def radians_to_degrees(radians):
+    return math.degrees(radians)
+
+# Define an attitude listener callback function
+def attitude_callback(attr_name, value):
+    # 'value' is a Quaternion object with attributes pitch, roll, and yaw (in radians)
+    pitch = radians_to_degrees(value.pitch)
+    roll = radians_to_degrees(value.roll)
+    yaw = radians_to_degrees(value.yaw)
+    print(f"Attitude (degrees): Pitch={pitch:.2f}°, Roll={roll:.2f}°, Yaw={yaw:.2f}°")
+    return pitch, roll, yaw
+
+veiculo.add_attribute_listener('attitude', attitude_callback)
+
 # --- ÁREA DE CONFIGURAÇÃO DO USUÁRIO ---
 
 # Defina aqui os ganhos para ROLL e PITCH (Iguais)
@@ -57,13 +72,16 @@ KD_YAW = 0.000
 atualizar_ganhos_drone(KP_ROLL_PITCH, KI_ROLL_PITCH, KD_ROLL_PITCH, 
                        KP_YAW, KI_YAW, KD_YAW)
 
-canal = veiculo.channels
 
+###### LEITURA DOS CANAIS DO CONTROLE ######
+
+canal = veiculo.channels
 print(" Roll (Ch1): %s" % canal[1])
 print(" Pitch (Ch2): %s" % canal[2])
 print(" Throttle (Ch4): %s" % canal[3])
 print(" Yaw (Ch3): %s" % canal[4])
 
+######
 try:
     while True:
         print("Ch1: %s, Ch2: %s, Ch3: %s, Ch4: %s" % (
@@ -74,3 +92,6 @@ try:
 except KeyboardInterrupt:
     print("Fim da conexão com o veículo.")
     veiculo.close()
+
+veiculo.remove_attribute_listener('attitude', attitude_callback)
+veiculo.close()
